@@ -16,3 +16,4 @@ Pillow>=10.0.0
 faiss-cpu>=1.7.4
 pypdf>=4.0.0
 psycopg2-binary>=2.9.0
+chainlit>=2.0.0

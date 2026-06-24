@@ -11,6 +11,10 @@ env.toml
 # Usage tracking data
 data/
 
+# Chainlit runtime artifacts (backend/chainlit_app/ dev harness)
+.chainlit/
+.files/
+
 # Python
 __pycache__/
 *.py[cod]
