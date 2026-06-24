@@ -2,6 +2,7 @@
 
 import base64
 import os
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
@@ -13,7 +14,8 @@ router = APIRouter()
 
 _CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID", "")
 _CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET", "")
-_REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI", "http://localhost:8501")
+_REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI", "http://localhost:8000/auth/linkedin/callback")
+_WEB_BASE_URL = os.getenv("WEB_BASE_URL", "http://localhost:3000")
 
 
 @router.get("/auth/linkedin/login")
@@ -21,17 +23,14 @@ def linkedin_login() -> RedirectResponse:
     return RedirectResponse(get_auth_url(_CLIENT_ID, _REDIRECT_URI))
 
 
-class LinkedInCallbackResponse(BaseModel):
-    token: str
-
-
-@router.get("/auth/linkedin/callback", response_model=LinkedInCallbackResponse)
-def linkedin_callback(code: str, state: str = "") -> LinkedInCallbackResponse:
+@router.get("/auth/linkedin/callback")
+def linkedin_callback(code: str, state: str = "") -> RedirectResponse:
     try:
         token = exchange_code_for_token(code, _CLIENT_ID, _CLIENT_SECRET, _REDIRECT_URI)
-        return LinkedInCallbackResponse(token=token)
+        query = urlencode({"token": token})
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        query = urlencode({"error": str(exc)})
+    return RedirectResponse(f"{_WEB_BASE_URL}/auth/linkedin?{query}")
 
 
 class LinkedInPublishRequest(BaseModel):

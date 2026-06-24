@@ -23,13 +23,15 @@ class Settings(BaseSettings):
     LANGCHAIN_API_KEY: str = ""
     LANGCHAIN_PROJECT: str = ""
 
+    WEB_BASE_URL: str = "http://localhost:3000"
+
     FACEBOOK_APP_ID: str = ""
     FACEBOOK_APP_SECRET: str = ""
-    FACEBOOK_REDIRECT_URI: str = "http://localhost:8501"
+    FACEBOOK_REDIRECT_URI: str = "http://localhost:8000/auth/facebook/callback"
 
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
-    LINKEDIN_REDIRECT_URI: str = "http://localhost:8501"
+    LINKEDIN_REDIRECT_URI: str = "http://localhost:8000/auth/linkedin/callback"
     LINKEDIN_API_VERSION: str = "202606"
 
     SQL_DB_HOST: str = ""

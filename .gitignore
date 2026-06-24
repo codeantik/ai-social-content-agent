@@ -5,6 +5,7 @@
 .env
 .env.*
 .env.local
+!.env.example
 env.toml
 
 # Usage tracking data
