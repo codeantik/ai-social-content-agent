@@ -2,15 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Repo layout
+
+- `backend/` — Python: the Streamlit app (`app.py`), the agent pipeline, FastAPI serving layer, DB, RAG, scraper. See `backend/CLAUDE.md` if present, otherwise the Architecture section below (paths are relative to `backend/`).
+- `frontend/` — Next.js frontend (App Router + TanStack Query + Tailwind). See `frontend/CLAUDE.md`.
+
 ## Commands
 
 ```bash
+cd backend
+
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the app
+# Run the Streamlit app
 streamlit run app.py
 # Opens at http://localhost:8501
+
+# Run the FastAPI serving layer (used by frontend/)
+uvicorn api.main:app --reload
+# Opens at http://localhost:8000
 
 # Environment setup
 cp .env.example .env   # then fill in API keys

@@ -93,18 +93,20 @@ User Input (text / voice via mic)
 
 ```
 content-creation-ai-agent/
-├── app.py                  # Streamlit UI entry point
-├── requirements.txt
-├── .env                    # API keys — git-ignored
-├── .env.example            # Template for environment variables
-├── .gitignore
-└── agent/
-    ├── __init__.py
-    ├── state.py            # AgentState Pydantic model
-    ├── graph.py            # LangGraph workflow + conditional edges
-    ├── nodes.py            # One ChatOpenAI-based function per agent node
-    ├── tools.py            # Tavily search + BeautifulSoup scraper
-    └── usage.py            # IP-based daily generation limit tracker
+├── backend/
+│   ├── app.py              # Streamlit UI entry point
+│   ├── requirements.txt
+│   ├── .env                # API keys — git-ignored
+│   ├── .env.example        # Template for environment variables
+│   └── agent/
+│       ├── __init__.py
+│       ├── state.py        # AgentState Pydantic model
+│       ├── graph.py        # LangGraph workflow + conditional edges
+│       ├── nodes.py        # One ChatOpenAI-based function per agent node
+│       ├── tools.py        # Tavily search + BeautifulSoup scraper
+│       └── usage.py        # IP-based daily generation limit tracker
+├── frontend/                # Next.js frontend
+└── .gitignore
 ```
 
 ---
@@ -115,7 +117,7 @@ content-creation-ai-agent/
 
 ```bash
 git clone <repo-url>
-cd content-creation-ai-agent
+cd content-creation-ai-agent/backend
 pip install -r requirements.txt
 ```
 
