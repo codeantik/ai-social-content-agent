@@ -2,39 +2,12 @@
 
 import json
 import os
-import streamlit as st
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
 DATA_DIR = Path("data")
 USAGE_FILE = DATA_DIR / "usage.json"
 DAILY_LIMIT = int(os.getenv("DAILY_GENERATION_LIMIT", "3"))
-
-
-# ---------------------------------------------------------------------------
-# IP resolution
-# ---------------------------------------------------------------------------
-
-def get_client_ip() -> str:
-    """
-    Resolve the real client IP from Streamlit request headers (v1.37+).
-    Falls back to "local" for development environments with no proxy headers.
-    """
-    try:
-        headers = st.context.headers
-        # Behind a load balancer / reverse proxy the real IP is in X-Forwarded-For.
-        # The header is a comma-separated list; the first entry is the original client.
-        xff = headers.get("X-Forwarded-For", "").strip()
-        if xff:
-            return xff.split(",")[0].strip()
-        # Other common proxy headers
-        for h in ("X-Real-Ip", "X-Client-Ip", "Cf-Connecting-Ip"):
-            ip = headers.get(h, "").strip()
-            if ip:
-                return ip
-    except Exception:
-        pass
-    return "local"
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,5 @@
 """Streamlit front-end — chat-first content creation agent with RAG pipeline."""
 
-import hashlib
 import importlib.util
 import os
 import tempfile
@@ -29,6 +28,8 @@ from db.pg_connection import is_pg_configured as _is_pg_configured
 from db.nonprofit_profile import fetch_nonprofit_profile as _fetch_nonprofit_profile
 from agent.state import AgentState
 from agent.chat import clarify, apply_edit
+from api.deps import effective_org_id, make_state
+from api.uploads import extract_pdf_text
 from agent.nodes import (
     load_session_data as _node_load_session,
     trigger_background_website_indexing as _node_trigger_indexing,
@@ -43,7 +44,6 @@ from agent.nodes import (
 )
 from agent.usage import (
     DAILY_LIMIT,
-    get_client_ip,
     is_limit_reached,
     record_generation,
     remaining,
@@ -65,26 +65,36 @@ from db.store import get_db_store
 
 load_dotenv()
 
-
-# ---------------------------------------------------------------------------
-# Helper: PDF text extraction (defined early — used in sidebar)
-# ---------------------------------------------------------------------------
-def _ingest_pdf_bytes(data: bytes) -> str:
-    try:
-        import io as _io
-        import pypdf
-        reader = pypdf.PdfReader(_io.BytesIO(data))
-        return "\n".join(p.extract_text() or "" for p in reader.pages)
-    except Exception:
-        return ""
-
 try:
     for _k, _v in st.secrets.items():
         os.environ.setdefault(_k, str(_v))
 except Exception:
     pass
 
-USER_UID = get_client_ip()
+
+def _get_client_ip() -> str:
+    """
+    Resolve the real client IP from Streamlit request headers (v1.37+).
+    Falls back to "local" for development environments with no proxy headers.
+    """
+    try:
+        headers = st.context.headers
+        # Behind a load balancer / reverse proxy the real IP is in X-Forwarded-For.
+        # The header is a comma-separated list; the first entry is the original client.
+        xff = headers.get("X-Forwarded-For", "").strip()
+        if xff:
+            return xff.split(",")[0].strip()
+        # Other common proxy headers
+        for h in ("X-Real-Ip", "X-Client-Ip", "Cf-Connecting-Ip"):
+            ip = headers.get(h, "").strip()
+            if ip:
+                return ip
+    except Exception:
+        pass
+    return "local"
+
+
+USER_UID = _get_client_ip()
 _db = get_db_store()
 
 # ---------------------------------------------------------------------------
@@ -253,7 +263,7 @@ with st.sidebar:
 
     _org_url = st.session_state.get("org_website_input", "").strip()
     if _org_url:
-        _org_id = _effective_org_id(_org_url)
+        _org_id = effective_org_id(_org_url, st.session_state.get("community_id_input", ""))
         _src_count = _db.get_knowledge_source_count(_org_id)
 
         from agent.nodes import _scrape_threads as _active_scrapes
@@ -285,11 +295,11 @@ with st.sidebar:
     if _kb_file is not None and _org_url:
         _file_key = f"kb_ingested_{_kb_file.name}_{_org_url}"
         if _file_key not in st.session_state:
-            _org_id = _effective_org_id(_org_url)
+            _org_id = effective_org_id(_org_url, st.session_state.get("community_id_input", ""))
             with st.spinner(f"Indexing {_kb_file.name}…"):
                 try:
                     if _kb_file.type == "application/pdf":
-                        _text = _ingest_pdf_bytes(_kb_file.read())
+                        _text = extract_pdf_text(_kb_file.read())
                     else:
                         _text = _kb_file.read().decode("utf-8", errors="replace")
 
@@ -408,39 +418,6 @@ def _handle_chat_message(text: str) -> None:
         st.session_state.chat_ready = True
 
 
-# ---------------------------------------------------------------------------
-# Helper: resolve org_id for the vector store
-# ---------------------------------------------------------------------------
-def _effective_org_id(org_url: str) -> str:
-    """
-    When the PG backend is active, returns the community ID entered in the sidebar.
-    Falls back to the md5 hash used by the local FAISS store.
-    """
-    if _is_pg_configured():
-        cid = st.session_state.get("community_id_input", "").strip()
-        if cid and cid.isdigit():
-            return cid
-    return hashlib.md5(org_url.encode()).hexdigest()[:12] if org_url else ""
-
-
-# ---------------------------------------------------------------------------
-# Helper: derive identity fields for AgentState
-# ---------------------------------------------------------------------------
-def _make_state(original_query: str, clarification_context: str) -> AgentState:
-    org_url = st.session_state.get("org_website_input", "").strip()
-    org_id = _effective_org_id(org_url)
-    return AgentState(
-        original_query=original_query,
-        org_website=org_url or None,
-        generate_image=False,
-        clarification_context=clarification_context,
-        session_id=st.session_state["session_id"],
-        user_id=USER_UID,
-        org_id=org_id,
-        nonprofit_profile=st.session_state.get("nonprofit_profile", {}),
-        uploaded_image_bytes=None,
-    )
-
 
 # ---------------------------------------------------------------------------
 # Main generation pipeline
@@ -455,7 +432,15 @@ def _run_generation() -> None:
     _uploaded_file = st.session_state.get(f"uploaded_image_{st.session_state.uploader_key}")
     uploaded_bytes = _uploaded_file.getvalue() if _uploaded_file else None
 
-    state = _make_state(original_query, clarification_context)
+    state = make_state(
+        original_query=original_query,
+        clarification_context=clarification_context,
+        org_url=st.session_state.get("org_website_input", "").strip(),
+        community_id=st.session_state.get("community_id_input", ""),
+        session_id=st.session_state["session_id"],
+        user_id=USER_UID,
+        nonprofit_profile=st.session_state.get("nonprofit_profile", {}),
+    )
 
     bar_ph = st.empty()
     bar = bar_ph.progress(0, text="Starting…")
