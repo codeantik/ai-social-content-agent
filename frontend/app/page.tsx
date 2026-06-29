@@ -18,26 +18,30 @@ const LI_STORAGE_KEY = "content-agent:li-oauth";
 function readFbConnectionFromStorage(): FacebookConnection {
   const empty: FacebookConnection = { connected: false, token: null, pages: [], selectedPageId: null, error: null };
   if (typeof window === "undefined") return empty;
-  const raw = sessionStorage.getItem(FB_STORAGE_KEY);
+  const raw = localStorage.getItem(FB_STORAGE_KEY);
   if (!raw) return empty;
-  sessionStorage.removeItem(FB_STORAGE_KEY);
   try {
     const parsed = JSON.parse(raw);
-    if (parsed.error) return { ...empty, error: parsed.error };
-    return { connected: true, token: parsed.token, pages: parsed.pages ?? [], selectedPageId: parsed.pages?.[0]?.id ?? null, error: null };
+    if (parsed.error) {
+      localStorage.removeItem(FB_STORAGE_KEY);
+      return { ...empty, error: parsed.error };
+    }
+    return { connected: true, token: parsed.token, pages: parsed.pages ?? [], selectedPageId: parsed.selectedPageId ?? parsed.pages?.[0]?.id ?? null, error: null };
   } catch { return empty; }
 }
 
 function readLiConnectionFromStorage(): LinkedInConnection {
   const empty: LinkedInConnection = { connected: false, token: null, orgId: "", error: null };
   if (typeof window === "undefined") return empty;
-  const raw = sessionStorage.getItem(LI_STORAGE_KEY);
+  const raw = localStorage.getItem(LI_STORAGE_KEY);
   if (!raw) return empty;
-  sessionStorage.removeItem(LI_STORAGE_KEY);
   try {
     const parsed = JSON.parse(raw);
-    if (parsed.error) return { ...empty, error: parsed.error };
-    return { connected: true, token: parsed.token, orgId: "", error: null };
+    if (parsed.error) {
+      localStorage.removeItem(LI_STORAGE_KEY);
+      return { ...empty, error: parsed.error };
+    }
+    return { connected: true, token: parsed.token, orgId: parsed.orgId ?? "", error: null };
   } catch { return empty; }
 }
 
@@ -68,6 +72,28 @@ export default function Home() {
 
   const [fbConnection, setFbConnection] = useState<FacebookConnection>(() => readFbConnectionFromStorage());
   const [liConnection, setLiConnection] = useState<LinkedInConnection>(() => readLiConnectionFromStorage());
+
+  function handleFbSelectPage(pageId: string) {
+    setFbConnection((c) => ({ ...c, selectedPageId: pageId }));
+    const raw = localStorage.getItem(FB_STORAGE_KEY);
+    if (raw) { try { localStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ ...JSON.parse(raw), selectedPageId: pageId })); } catch {} }
+  }
+
+  function handleFbDisconnect() {
+    localStorage.removeItem(FB_STORAGE_KEY);
+    setFbConnection({ connected: false, token: null, pages: [], selectedPageId: null, error: null });
+  }
+
+  function handleLiOrgIdChange(orgId: string) {
+    setLiConnection((c) => ({ ...c, orgId }));
+    const raw = localStorage.getItem(LI_STORAGE_KEY);
+    if (raw) { try { localStorage.setItem(LI_STORAGE_KEY, JSON.stringify({ ...JSON.parse(raw), orgId })); } catch {} }
+  }
+
+  function handleLiDisconnect() {
+    localStorage.removeItem(LI_STORAGE_KEY);
+    setLiConnection({ connected: false, token: null, orgId: "", error: null });
+  }
 
   const clarifyMutation = useMutation({
     mutationFn: (history: ChatMessage[]) => clarify(history),
@@ -293,12 +319,12 @@ export default function Home() {
               onVoiceTranscript={handleVoiceTranscript}
               fbEnabled={fbEnabled}
               fbConnection={fbConnection}
-              onFbSelectPage={(pageId) => setFbConnection((c) => ({ ...c, selectedPageId: pageId }))}
-              onFbDisconnect={() => setFbConnection({ connected: false, token: null, pages: [], selectedPageId: null, error: null })}
+              onFbSelectPage={handleFbSelectPage}
+              onFbDisconnect={handleFbDisconnect}
               liEnabled={liEnabled}
               liConnection={liConnection}
-              onLiOrgIdChange={(orgId) => setLiConnection((c) => ({ ...c, orgId }))}
-              onLiDisconnect={() => setLiConnection({ connected: false, token: null, orgId: "", error: null })}
+              onLiOrgIdChange={handleLiOrgIdChange}
+              onLiDisconnect={handleLiDisconnect}
             />
           </div>
         </motion.div>

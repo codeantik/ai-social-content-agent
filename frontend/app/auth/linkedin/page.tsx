@@ -16,9 +16,9 @@ function LinkedInCallback() {
     const error = params.get("error");
 
     if (error) {
-      sessionStorage.setItem(LI_STORAGE_KEY, JSON.stringify({ error }));
+      localStorage.setItem(LI_STORAGE_KEY, JSON.stringify({ error }));
     } else if (token) {
-      sessionStorage.setItem(LI_STORAGE_KEY, JSON.stringify({ token }));
+      localStorage.setItem(LI_STORAGE_KEY, JSON.stringify({ token }));
     }
     router.replace("/");
   }, [params, router]);

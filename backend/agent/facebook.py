@@ -75,16 +75,27 @@ def post_to_page(
                 data={"caption": message, "published": "true"},
                 files={"source": ("image.jpg", buf.getvalue(), "image/jpeg")},
             )
+            if not r.is_success:
+                try:
+                    detail = r.json()
+                except Exception:
+                    detail = r.text
+                raise Exception(f"Facebook {r.status_code}: {detail}")
+            # Photos API returns {"id": photo_id, "post_id": "page_id_post_id"}.
+            # We want post_id so the frontend can build a permalink.
+            data = r.json()
+            return data.get("post_id") or data.get("id", "")
         else:
             r = c.post(
                 f"{GRAPH_API}/{page_id}/feed",
                 params={"access_token": page_access_token},
                 data={"message": message},
             )
-        if not r.is_success:
-            try:
-                detail = r.json()
-            except Exception:
-                detail = r.text
-            raise Exception(f"Facebook {r.status_code}: {detail}")
-        return r.json().get("id", "")
+            if not r.is_success:
+                try:
+                    detail = r.json()
+                except Exception:
+                    detail = r.text
+                raise Exception(f"Facebook {r.status_code}: {detail}")
+            # Feed API returns {"id": "page_id_post_id"}
+            return r.json().get("id", "")

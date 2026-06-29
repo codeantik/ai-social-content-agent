@@ -48,7 +48,7 @@ export function ResultPanel({ result, editorContent, onEditorContentChange, onSt
   const [editInput, setEditInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [showSources, setShowSources] = useState(false);
-  const [publishMsg, setPublishMsg] = useState<{ kind: "fb" | "li"; text: string; ok: boolean } | null>(null);
+  const [publishMsg, setPublishMsg] = useState<{ kind: "fb" | "li"; text: string; url?: string; ok: boolean } | null>(null);
 
   const edit = useMutation({
     mutationFn: (instruction: string) => editContent(editorContent, instruction, result.originalQuery),
@@ -62,9 +62,12 @@ export function ResultPanel({ result, editorContent, onEditorContentChange, onSt
       return publishToFacebook({ page_id: page.id, page_access_token: page.access_token, content: editorContent, image_base64: result.imageBase64 });
     },
     onSuccess: (data) => {
-      const parts = data.post_id.split("_");
-      const url = parts.length === 2 ? `https://www.facebook.com/${parts[0]}/posts/${parts[1]}` : "https://www.facebook.com/";
-      setPublishMsg({ kind: "fb", text: `Published! ${url}`, ok: true });
+      // post_id is always "page_id_post_id"; split on first _ only
+      const idx = data.post_id.indexOf("_");
+      const url = idx !== -1
+        ? `https://www.facebook.com/permalink.php?story_fbid=${data.post_id.slice(idx + 1)}&id=${data.post_id.slice(0, idx)}`
+        : "https://www.facebook.com/";
+      setPublishMsg({ kind: "fb", text: "Posted to Facebook", url, ok: true });
     },
     onError: (err) => setPublishMsg({ kind: "fb", text: err instanceof Error ? err.message : "Failed", ok: false }),
   });
@@ -75,7 +78,10 @@ export function ResultPanel({ result, editorContent, onEditorContentChange, onSt
       return publishToLinkedIn({ org_urn: `urn:li:organization:${liConnection.orgId.trim()}`, access_token: liConnection.token, content: editorContent, image_base64: result.imageBase64 });
     },
     onSuccess: (data) => {
-      setPublishMsg({ kind: "li", text: `Published! linkedin.com/feed/update/${data.post_urn}/`, ok: true });
+      const url = data.post_urn
+        ? `https://www.linkedin.com/feed/update/${data.post_urn}/`
+        : "https://www.linkedin.com/";
+      setPublishMsg({ kind: "li", text: "Posted to LinkedIn", url, ok: true });
     },
     onError: (err) => setPublishMsg({ kind: "li", text: err instanceof Error ? err.message : "Failed", ok: false }),
   });
@@ -318,16 +324,31 @@ export function ResultPanel({ result, editorContent, onEditorContentChange, onSt
           </div>
 
           {publishMsg && (
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               style={{
                 marginTop: 10, fontSize: 12,
                 color: publishMsg.ok ? "var(--success)" : "var(--danger)",
+                display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
               }}
             >
-              {publishMsg.ok ? "✓ " : "✕ "}{publishMsg.text}
-            </motion.p>
+              {publishMsg.ok ? "✓" : "✕"}{" "}{publishMsg.text}
+              {publishMsg.ok && publishMsg.url && (
+                <a
+                  href={publishMsg.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "inherit", textDecoration: "underline",
+                    textUnderlineOffset: 2, opacity: 0.85,
+                    wordBreak: "break-all",
+                  }}
+                >
+                  View post →
+                </a>
+              )}
+            </motion.div>
           )}
         </div>
       )}

@@ -17,9 +17,9 @@ function FacebookCallback() {
     const error = params.get("error");
 
     if (error) {
-      sessionStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ error }));
+      localStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ error }));
     } else if (token) {
-      sessionStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ token, pages: pagesRaw ? JSON.parse(pagesRaw) : [] }));
+      localStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ token, pages: pagesRaw ? JSON.parse(pagesRaw) : [] }));
     }
     router.replace("/");
   }, [params, router]);
