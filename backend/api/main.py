@@ -7,12 +7,19 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(override=True)
 
 from api.routes import chat, content, facebook, knowledge, linkedin, profile, transcribe, usage  # noqa: E402
+from api.settings import get_settings  # noqa: E402
 
 app = FastAPI(title="Content Creator AI Agent API")
 
+_settings = get_settings()
+_origins = list({
+    "http://localhost:3000",
+    _settings.WEB_BASE_URL,
+})
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

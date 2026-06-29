@@ -1,3 +1,7 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic-settings>=2.3.0
+sse-starlette>=2.1.0
 streamlit>=1.37.0
 streamlit-mic-recorder>=0.0.8
 langsmith>=0.1.0
