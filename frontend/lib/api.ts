@@ -17,14 +17,11 @@ async function asJson<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function clarify(
-  messages: ChatMessage[],
-  nonprofitProfile: NonprofitProfile = {},
-): Promise<ClarifyResponse> {
+export function clarify(messages: ChatMessage[]): Promise<ClarifyResponse> {
   return fetch(`${API_BASE}/chat/clarify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, nonprofit_profile: nonprofitProfile }),
+    body: JSON.stringify({ messages, nonprofit_profile: {} }),
   }).then(asJson<ClarifyResponse>);
 }
 
@@ -40,9 +37,12 @@ export function editContent(
   }).then(asJson<{ content: string }>);
 }
 
-export function transcribe(audio: Blob): Promise<{ text: string }> {
+export function transcribe(audio: Blob, mimeType?: string): Promise<{ text: string }> {
+  const ext = (mimeType ?? audio.type).includes("ogg") ? ".ogg"
+    : (mimeType ?? audio.type).includes("mp4") ? ".mp4"
+    : ".webm";
   const form = new FormData();
-  form.append("audio", audio, "recording.wav");
+  form.append("audio", audio, `recording${ext}`);
   return fetch(`${API_BASE}/transcribe`, { method: "POST", body: form }).then(
     asJson<{ text: string }>,
   );

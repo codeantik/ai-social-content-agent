@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 const LI_STORAGE_KEY = "content-agent:li-oauth";
 
@@ -21,13 +23,20 @@ function LinkedInCallback() {
     router.replace("/");
   }, [params, router]);
 
-  return <p className="p-6 text-sm text-black/60">Connecting to LinkedIn…</p>;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 24 }}>
+      <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+      <span style={{ fontSize: 14, color: "var(--text-muted)" }}>Connecting to LinkedIn…</span>
+    </div>
+  );
 }
 
 export default function LinkedInCallbackPage() {
   return (
-    <Suspense>
-      <LinkedInCallback />
-    </Suspense>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <Suspense>
+        <LinkedInCallback />
+      </Suspense>
+    </motion.div>
   );
 }

@@ -22,10 +22,21 @@ class TranscribeResponse(BaseModel):
     text: str
 
 
+_MIME_TO_EXT = {
+    "audio/webm": ".webm",
+    "video/webm": ".webm",
+    "audio/ogg": ".ogg",
+    "audio/mp4": ".mp4",
+    "audio/mpeg": ".mp3",
+    "audio/wav": ".wav",
+}
+
+
 @router.post("/transcribe", response_model=TranscribeResponse)
 async def transcribe(audio: UploadFile = File(...)) -> TranscribeResponse:
     data = await audio.read()
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+    suffix = _MIME_TO_EXT.get(audio.content_type or "", ".webm")
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(data)
         tmp_path = tmp.name
     with open(tmp_path, "rb") as f:

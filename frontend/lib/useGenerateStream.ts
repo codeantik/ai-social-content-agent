@@ -6,8 +6,6 @@ import { API_BASE } from "./api";
 export type GenerateParams = {
   brief: string;
   sessionId: string;
-  orgWebsite?: string;
-  communityId?: string;
   generateImage: boolean;
   summary?: string;
   image?: File | null;
@@ -50,8 +48,6 @@ export function useGenerateStream() {
     const form = new FormData();
     form.append("brief", params.brief);
     form.append("session_id", params.sessionId);
-    form.append("org_website", params.orgWebsite ?? "");
-    form.append("community_id", params.communityId ?? "");
     form.append("generate_image", String(params.generateImage));
     form.append("summary", params.summary ?? "");
     if (params.image) form.append("image", params.image);

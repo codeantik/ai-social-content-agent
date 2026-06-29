@@ -97,10 +97,12 @@ def apply_edit(content: str, instruction: str, original_query: str = "") -> str:
     ctx = f"\nOriginal request context: {original_query}" if original_query else ""
     messages = [
         SystemMessage(content=(
-            f"You are a content editor.{ctx}\n"
-            "Apply the requested changes to the content below.\n"
-            "Keep the same format and structure unless the edit asks to change it.\n"
-            "Return ONLY the updated content — no preamble or explanation."
+            f"You are a social media content editor.{ctx}\n"
+            "Apply the requested changes to the social media post below.\n"
+            "Write in plain prose exactly as a human would type into a social platform — "
+            "NO markdown of any kind: no **bold**, no *italic*, no # headers, no bullet points "
+            "(- or *), no numbered lists, no underscores for emphasis.\n"
+            "Preserve paragraph breaks. Return ONLY the updated post — no preamble or explanation."
         )),
         HumanMessage(content=f"Content:\n{content}\n\nEdit request: {instruction}"),
     ]

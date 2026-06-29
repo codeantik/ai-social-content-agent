@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-load_dotenv()
+load_dotenv(override=True)
 
 from api.routes import chat, content, facebook, knowledge, linkedin, profile, transcribe, usage  # noqa: E402
 

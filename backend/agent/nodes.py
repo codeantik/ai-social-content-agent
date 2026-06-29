@@ -2,6 +2,7 @@
 
 import base64
 import io
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
@@ -19,6 +20,19 @@ if TYPE_CHECKING:
     from db.store import DBStore
 
 _MAX_IMAGE_SIDE = 1080
+
+
+def _strip_markdown(text: str) -> str:
+    """Remove markdown formatting artifacts that make content look AI-generated."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text, flags=re.DOTALL)
+    text = re.sub(r"\*(.+?)\*", r"\1", text, flags=re.DOTALL)
+    text = re.sub(r"__(.+?)__", r"\1", text, flags=re.DOTALL)
+    text = re.sub(r"_(.+?)_", r"\1", text, flags=re.DOTALL)
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*[-*•]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*\d+\.\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 _llm_fast: ChatOpenAI | None = None
 _llm_main: ChatOpenAI | None = None
@@ -266,7 +280,12 @@ def _build_content_messages(state: AgentState) -> list:
         "(e.g., polished and professional for LinkedIn, conversational for Facebook, "
         "punchy with hashtags for Instagram). "
         "Be factual — do NOT fabricate statistics or quotes. "
-        "Format with clear paragraphs."
+        "Write in clear, flowing paragraphs separated by blank lines.\n\n"
+        "CRITICAL — NEVER use markdown syntax of any kind: no **bold**, no *italic*, "
+        "no # headers, no - or * bullet lists, no numbered lists (1. 2. 3.), no underscores. "
+        "Write exactly as a real human social media manager would type a post directly into "
+        "Facebook, LinkedIn, or Instagram — plain sentences and paragraphs, emojis where "
+        "natural, no formatting symbols whatsoever."
         f"{profile_block}{rag_block}{org_block}{web_block}{clarify_block}{history_block}"
     )
     return [
@@ -276,7 +295,7 @@ def _build_content_messages(state: AgentState) -> list:
 
 
 def generate_content(state: AgentState) -> AgentState:
-    content = _main().invoke(_build_content_messages(state)).content.strip()
+    content = _strip_markdown(_main().invoke(_build_content_messages(state)).content)
     return state.model_copy(update={"generated_content": content})
 
 

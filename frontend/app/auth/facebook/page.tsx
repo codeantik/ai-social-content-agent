@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 const FB_STORAGE_KEY = "content-agent:fb-oauth";
 
@@ -18,21 +19,25 @@ function FacebookCallback() {
     if (error) {
       sessionStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ error }));
     } else if (token) {
-      sessionStorage.setItem(
-        FB_STORAGE_KEY,
-        JSON.stringify({ token, pages: pagesRaw ? JSON.parse(pagesRaw) : [] }),
-      );
+      sessionStorage.setItem(FB_STORAGE_KEY, JSON.stringify({ token, pages: pagesRaw ? JSON.parse(pagesRaw) : [] }));
     }
     router.replace("/");
   }, [params, router]);
 
-  return <p className="p-6 text-sm text-black/60">Connecting to Facebook…</p>;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 24 }}>
+      <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+      <span style={{ fontSize: 14, color: "var(--text-muted)" }}>Connecting to Facebook…</span>
+    </div>
+  );
 }
 
 export default function FacebookCallbackPage() {
   return (
-    <Suspense>
-      <FacebookCallback />
-    </Suspense>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <Suspense>
+        <FacebookCallback />
+      </Suspense>
+    </motion.div>
   );
 }
